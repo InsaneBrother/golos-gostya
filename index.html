@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<meta name="referrer" content="no-referrer">
+<title>Голос гостя</title>
+<style>
+  html, body { margin: 0; height: 100%; }
+  body { display: grid; place-items: center; padding: 24px; box-sizing: border-box; font: 16px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; background: linear-gradient(140deg, #158069, #0A3F34); color: #fff; text-align: center; }
+  .box { max-width: 320px; display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .spin { width: 38px; height: 38px; border-radius: 50%; border: 3px solid rgba(255,255,255,.22); border-top-color: #FFD27A; animation: r .8s linear infinite; margin-bottom: 6px; }
+  @keyframes r { to { transform: rotate(360deg); } }
+  p { margin: 0; color: rgba(255,255,255,.85); }
+  b { font-size: 19px; color: #fff; }
+  a { display: inline-block; margin-top: 8px; padding: 12px 20px; border-radius: 14px; background: #fff; color: #0C5143; font-weight: 600; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="box" id="b"><div class="spin"></div><p>Открываем… · Ашылуда…</p></div>
+<script>
+// Постоянный адрес «Голоса гостя». Сервер на компьютере владельца записывает
+// текущий адрес туннеля в tunnel.json, а эта страница переадресует туда.
+//   #g        — страница отзыва основной точки (QR для гостей)
+//   #g-<id>   — страница отзыва конкретной точки
+//   #o=<ключ> — кабинет владельца и управляющего (ключ остаётся в адресе после #, на GitHub не уходит)
+(async function () {
+  var h = location.hash.slice(1), path = "/guest";
+  if (h.indexOf("g-") === 0) path = "/#" + h;
+  else if (h.indexOf("o=") === 0) path = "/?t=" + encodeURIComponent(h.slice(2));
+  history.replaceState(null, "", location.pathname);
+  function fail(url) {
+    document.getElementById("b").innerHTML = "<b>Сервис временно недоступен</b><p>Компьютер с сервером выключен или перезапускается. Попробуйте через минуту.</p>"
+      + (url ? "<a href=\"" + url + "\">Всё равно открыть</a>" : "<a href=\"\" onclick=\"location.reload();return false\">Обновить</a>");
+  }
+  async function get(u) { var r = await fetch(u, { cache: "no-store" }); if (!r.ok) throw 0; return (await r.json()).url; }
+  var base = null;
+  try { base = await get("https://raw.githubusercontent.com/InsaneBrother/golos-gostya/main/tunnel.json?_=" + Date.now()); } catch (e) {}
+  if (!base) try { base = await get("tunnel.json?_=" + Date.now()); } catch (e) {}
+  if (!base || !/^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/.test(base)) return fail();
+  var target = base + path;
+  try {
+    var ctl = new AbortController(); setTimeout(function () { ctl.abort(); }, 8000);
+    var r = await fetch(base + "/healthz", { cache: "no-store", signal: ctl.signal });
+    if (!r.ok) throw 0;
+  } catch (e) { return fail(target); }
+  location.replace(target);
+})();
+</script>
+</body>
+</html>
