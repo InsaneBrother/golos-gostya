@@ -25,10 +25,12 @@
 //   #g        — страница отзыва основной точки (QR для гостей)
 //   #g-<id>   — страница отзыва конкретной точки
 //   #o=<ключ> — кабинет владельца и управляющего (ключ остаётся в адресе после #, на GitHub не уходит)
+//   #inbox, #shift, #home… — вкладка кабинета на телефоне, где кабинет уже открывали по QR
 (async function () {
   var h = location.hash.slice(1), path = "/guest";
   if (h.indexOf("g-") === 0) path = "/#" + h;
   else if (h.indexOf("o=") === 0) path = "/?t=" + encodeURIComponent(h.slice(2));
+  else if (/^(inbox|shift|home|reply|points|more)$/.test(h)) path = "/#" + h; // вкладка кабинета (ссылки из Telegram); ключ уже сохранён в телефоне
   history.replaceState(null, "", location.pathname);
   function fail(url) {
     document.getElementById("b").innerHTML = "<b>Сервис временно недоступен</b><p>Компьютер с сервером выключен или перезапускается. Попробуйте через минуту.</p>"
