@@ -30,6 +30,7 @@
   var h = location.hash.slice(1), path = "/guest";
   if (h.indexOf("g-") === 0) path = "/#" + h;
   else if (h.indexOf("o=") === 0) path = "/?t=" + encodeURIComponent(h.slice(2));
+  else if (h.indexOf("dev=") === 0) path = "/dev?k=" + encodeURIComponent(h.slice(4)); // кабинет разработчика
   else if (/^(inbox|shift|home|reply|points|more)$/.test(h)) path = "/#" + h; // вкладка кабинета (ссылки из Telegram); ключ уже сохранён в телефоне
   history.replaceState(null, "", location.pathname);
   function fail(url) {
