@@ -33,22 +33,38 @@
   else if (h.indexOf("dev=") === 0) path = "/dev?k=" + encodeURIComponent(h.slice(4)); // кабинет разработчика
   else if (/^(inbox|shift|home|reply|points|more)$/.test(h)) path = "/#" + h; // вкладка кабинета (ссылки из Telegram); ключ уже сохранён в телефоне
   history.replaceState(null, "", location.pathname);
+  var guest = path === "/guest" || h.indexOf("g-") === 0, box = document.getElementById("b");
+  var nav = String(navigator.language || "").toLowerCase(), L = /^kk/.test(nav) ? "kk" : /^en/.test(nav) ? "en" : "ru";
+  // Гостю — вежливо и на его языке, без «компьютер выключен» (это бьёт по доверию к заведению).
+  // Владельцу и управляющему — честно, что с сервером.
+  var T = {
+    ru: ["Форма отзыва ненадолго недоступна", "Страница откроется сама, как только связь восстановится. Можно не закрывать её."],
+    kk: ["Пікір формасы уақытша қолжетімсіз", "Байланыс қалпына келгенде бет өзі ашылады. Жаппай-ақ күтіңіз."],
+    en: ["The feedback form is briefly unavailable", "This page will open by itself as soon as the connection is back. You can keep it open."],
+  };
+  var tries = 0, MAX = 40; // 40 × 15 с = 10 минут: перезагрузка компьютера и новый туннель — около минуты
   function fail(url) {
-    document.getElementById("b").innerHTML = "<b>Сервис временно недоступен</b><p>Компьютер с сервером выключен или перезапускается. Попробуйте через минуту.</p>"
-      + (url ? "<a href=\"" + url + "\">Всё равно открыть</a>" : "<a href=\"\" onclick=\"location.reload();return false\">Обновить</a>");
+    var msg = guest ? "<b>" + T[L][0] + "</b><p>" + T[L][1] + "</p>"
+      : "<b>Сервис временно недоступен</b><p>Сервер выключен или перезапускается. Страница откроется сама, когда он заработает.</p>";
+    box.innerHTML = msg + (tries < MAX ? "<div class=\"spin\" style=\"margin-top:8px\"></div>" : "")
+      + (!guest && url ? "<a href=\"" + url + "\">Всё равно открыть</a>" : "<a href=\"\" onclick=\"location.reload();return false\">" + (guest && L === "kk" ? "Жаңарту" : guest && L === "en" ? "Reload" : "Обновить") + "</a>");
+    if (tries++ < MAX) setTimeout(go, 15000);
   }
   async function get(u) { var r = await fetch(u, { cache: "no-store" }); if (!r.ok) throw 0; return (await r.json()).url; }
-  var base = null;
-  try { base = await get("https://raw.githubusercontent.com/InsaneBrother/golos-gostya/main/tunnel.json?_=" + Date.now()); } catch (e) {}
-  if (!base) try { base = await get("tunnel.json?_=" + Date.now()); } catch (e) {}
-  if (!base || !/^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/.test(base)) return fail();
-  var target = base + path;
-  try {
-    var ctl = new AbortController(); setTimeout(function () { ctl.abort(); }, 8000);
-    var r = await fetch(base + "/healthz", { cache: "no-store", signal: ctl.signal });
-    if (!r.ok) throw 0;
-  } catch (e) { return fail(target); }
-  location.replace(target);
+  async function go() {
+    var base = null; // адрес туннеля меняется при перезапуске — читаем его заново при каждой попытке
+    try { base = await get("https://raw.githubusercontent.com/InsaneBrother/golos-gostya/main/tunnel.json?_=" + Date.now()); } catch (e) {}
+    if (!base) try { base = await get("tunnel.json?_=" + Date.now()); } catch (e) {}
+    if (!base || !/^https:\/\/[a-z0-9-]+\.trycloudflare\.com$/.test(base)) return fail();
+    var target = base + path;
+    try {
+      var ctl = new AbortController(); setTimeout(function () { ctl.abort(); }, 8000);
+      var r = await fetch(base + "/healthz", { cache: "no-store", signal: ctl.signal });
+      if (!r.ok) throw 0;
+    } catch (e) { return fail(target); }
+    location.replace(target);
+  }
+  go();
 })();
 </script>
 </body>
