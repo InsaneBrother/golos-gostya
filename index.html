@@ -28,12 +28,12 @@
 //   #inbox, #shift, #home… — вкладка кабинета на телефоне, где кабинет уже открывали по QR
 (async function () {
   var h = location.hash.slice(1), path = "/guest";
-  if (h.indexOf("g-") === 0) path = "/#" + h;
+  if (h.indexOf("g-") === 0 || h.indexOf("k-") === 0) path = "/#" + h; // k- — планшет на ресепшене
   else if (h.indexOf("o=") === 0) path = "/?t=" + encodeURIComponent(h.slice(2));
   else if (h.indexOf("dev=") === 0) path = "/dev?k=" + encodeURIComponent(h.slice(4)); // кабинет разработчика
   else if (/^(inbox|shift|home|reply|points|more)$/.test(h)) path = "/#" + h; // вкладка кабинета (ссылки из Telegram); ключ уже сохранён в телефоне
   history.replaceState(null, "", location.pathname);
-  var guest = path === "/guest" || h.indexOf("g-") === 0, box = document.getElementById("b");
+  var guest = path === "/guest" || h.indexOf("g-") === 0 || h.indexOf("k-") === 0, box = document.getElementById("b");
   var nav = String(navigator.language || "").toLowerCase(), L = /^kk/.test(nav) ? "kk" : /^en/.test(nav) ? "en" : "ru";
   // Гостю — вежливо и на его языке, без «компьютер выключен» (это бьёт по доверию к заведению).
   // Владельцу и управляющему — честно, что с сервером.
